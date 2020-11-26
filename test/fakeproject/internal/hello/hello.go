@@ -1,7 +1,12 @@
 package hello
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 func SayHello() {
-	fmt.Print("Hellfewoffdd")
+	fmt.Println("Hello")
+	time.Sleep(2 * time.Second)
+	fmt.Println("Good bye")
 }
