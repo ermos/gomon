@@ -1,7 +1,6 @@
 package watcher
 
 import (
-	"fmt"
 	"github.com/karrick/godirwalk"
 	"log"
 	"os"
@@ -26,7 +25,6 @@ func folder (ch chan bool, dir string, exts []string) {
 
 		for {
 			t := size(root, exts)
-			fmt.Println(t, oldRootSize)
 			if t != oldRootSize {
 				ch <- true
 				break
@@ -49,7 +47,7 @@ func size(root string, exts []string) (result int64) {
 			result += stat.Size()
 			return nil
 		},
-		Unsorted: true, // (optional) set true for faster yet non-deterministic enumeration (see godoc)
+		Unsorted: true,
 	})
 	if err != nil {
 		log.Fatal(err)
