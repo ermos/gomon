@@ -1,77 +1,115 @@
 package builder
 
 import (
+	"errors"
 	"fmt"
+	"github.com/ermos/chalk"
+	"io"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
-func Build (ch chan bool) {
-	done := make(chan bool)
-	chs := make(chan bool)
-	start := time.Now()
+type runner struct {
+	command 	*exec.Cmd
+	startedAt	time.Time
+	dst 		io.Writer
+}
 
-	go func() {
-		for {
-			select {
-			case <- ch:
-				chs <- true
-			}
-		}
-	}()
+func Build (ch chan string, args []string) {
+	r := runner{}
+	stringArgs := strings.Join(args, " ")
 
-	go func() {
-		for {
-			select {
-			case <- done:
-				chs <- false
-			}
-		}
-	}()
+	r.setWriter(os.Stdout)
 
-	fmt.Println("[gomon] Build binary..")
+	fmt.Printf("[%s] Starting compilation in watch mode..\n", time.Now().Format("2006-01-02 15:04:05"))
 	l:for {
-		execute(nil, done, "go", "run", "./")
+		clear()
+		fmt.Println(chalk.Green("[gomon]"), chalk.Yellow("1.0.0"))
+		fmt.Println(
+			chalk.Green("[gomon]"),
+			chalk.Yellow("watching dir :"),
+			chalk.Magenta("toto,tata,ok"),
+			)
+		fmt.Println(
+			chalk.Green("[gomon]"),
+			chalk.Yellow("watching file's type :"),
+			chalk.Magenta("go,js,json"),
+			)
+		fmt.Println(chalk.Green("[gomon]"), chalk.Blue("go run ./ ", stringArgs))
+		err := r.Run("go", "run", "./", stringArgs)
+		if err != nil {
+			log.Fatal(err)
+		}
 		select {
-		case v := <- chs:
-			if v {
-				fmt.Println("[gomon] Rebuild binary..")
+		case v := <- ch:
+			if v == "reload" {
+				err = r.Kill()
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(chalk.Green("[gomon]"), chalk.Magenta("Recompile.."))
 			} else {
 				break l
 			}
 		}
 	}
-	fmt.Printf("[gomon] Your program is done, time elapsed : %s\n", time.Since(start))
-}
-
-func execute(dir *string, done chan bool, name string, args... string) {
-	ch := make(chan error)
-
-	cmd := exec.Command(name, args...)
-	if dir != nil {
-		cmd.Dir = *dir
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	go func(){
-		ch <- cmd.Run()
-	}()
-
-	select{
-	case err := <- ch:
-		if err != nil {
-			log.Fatalf("command failed with %s", err)
-		} else {
-			done <- true
-		}
-	}
+	fmt.Println(chalk.Green("[gomon]"), chalk.Magentaf("Your program is done, time elapsed : %s", time.Since(r.startedAt).String()))
 }
 
 func clear () {
 	cmd := exec.Command("clear")
 	cmd.Stdout = os.Stdout
 	cmd.Run()
+}
+
+func (r *runner) Run(name string, args... string) error {
+	if r.command != nil && r.command.ProcessState != nil && r.command.ProcessState.Exited() {
+		return errors.New("last process is not end")
+	}
+
+	r.command = exec.Command(name, args...)
+
+	stdout, err := r.command.StdoutPipe()
+	if err != nil {
+		return err
+	}
+
+	stderr, err := r.command.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	err = r.command.Start()
+	if err != nil {
+		return err
+	}
+
+	r.startedAt = time.Now()
+
+	go io.Copy(r.dst, stdout)
+	go io.Copy(r.dst, stderr)
+	go r.command.Wait()
+
+	return nil
+}
+
+func (r *runner) Kill() error {
+	if r.command == nil || r.command.Process == nil  {
+		return nil
+	}
+
+	if err := r.command.Process.Kill(); err != nil {
+		return err
+	}
+
+	r.command = nil
+
+	return nil
+}
+
+func (r *runner) setWriter(writer io.Writer) {
+	r.dst = writer
 }

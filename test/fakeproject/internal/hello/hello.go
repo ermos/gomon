@@ -5,8 +5,12 @@ import (
 	"time"
 )
 
-func SayHello() {
-	fmt.Println("Hello")
-	time.Sleep(2 * time.Second)
-	fmt.Println("Good bye")
+func SayHello(args []string) {
+	fmt.Println("fewefw")
+	i := 0
+	for {
+		fmt.Println(i)
+		i++
+		time.Sleep(1 * time.Second)
+	}
 }

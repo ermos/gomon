@@ -17,6 +17,6 @@ func main() {
 		"List of dirs contains files that allows to reload your application (separate with comma)",
 		"list",
 	).AddShortName("d")
-	cli.AddAction(cmd.DevHandler{}, "dev", "...args")
+	cli.AddAction(cmd.StartHandler{}, "start", "...args")
 	cli.Run()
 }

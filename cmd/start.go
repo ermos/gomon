@@ -8,13 +8,13 @@ import (
 	"regexp"
 )
 
-type DevHandler struct {}
+type StartHandler struct {}
 
-func (DevHandler) Description(c cli.CLI) string {
+func (StartHandler) Description(c cli.CLI) string {
 	return "Start live server that allows to reload your golang application"
 }
 
-func (DevHandler) Run(ctx context.Context, c cli.CLI) error {
+func (StartHandler) Run(ctx context.Context, c cli.CLI) error {
 	var dir, ext []string
 	if c.Options["dir"] != nil {
 		dir = parseList(c.Options["dir"][0])
@@ -22,9 +22,9 @@ func (DevHandler) Run(ctx context.Context, c cli.CLI) error {
 	if c.Options["ext"] != nil {
 		ext = parseList(c.Options["ext"][0])
 	}
-	ch := make(chan bool)
+	ch := make(chan string)
 	watcher.Watch(ch, dir, ext)
-	builder.Build(ch)
+	builder.Build(ch, c.Args)
 	return nil
 }
 

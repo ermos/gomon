@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func Watch(ch chan bool, dirs, exts []string) {
+func Watch(ch chan string, dirs, exts []string) {
 	if len(dirs) == 0 {
 		go folder(ch, "", exts)
 	} else {
@@ -18,7 +18,7 @@ func Watch(ch chan bool, dirs, exts []string) {
 	}
 }
 
-func folder (ch chan bool, dir string, exts []string) {
+func folder (ch chan string, dir string, exts []string) {
 	root := filepath.Join(".", dir)
 	for {
 		oldRootSize := size(root, exts)
@@ -26,7 +26,7 @@ func folder (ch chan bool, dir string, exts []string) {
 		for {
 			t := size(root, exts)
 			if t != oldRootSize {
-				ch <- true
+				ch <- "reload"
 				break
 			}
 			time.Sleep(1 * time.Second)
